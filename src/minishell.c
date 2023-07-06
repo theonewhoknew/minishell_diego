@@ -1,3 +1,15 @@
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/signal.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <errno.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 #include "../inc/minishell.h"
 
 //int	search_redir(char **args)
@@ -141,29 +153,80 @@ int parse_ors(char *line, char **envp)
 	return (exit);
 }
 
-int main(int argc, char **argv, char **envp)
-{
+pid_t		child_pid;
+
+int new_shell(char **envp)
+{	
 	char				*c;
-	int					exit;
+	int					exit_code;
+
+	while (1)
+	{	
+		printf("pid is %d\n", getpid());
+		c = readline("jgravalo> ");
+		if (c == NULL)
+			exit(1);
+		add_history(c);
+		exit_code = parse_pipex(c, envp);
+		free(c);
+	}
+		return (exit_code);
+}
+
+void handler(int signal)
+{
+	if (signal == SIGINT)
+	{	
+		printf("child process is %d\n", child_pid);
+		printf("return of kill is %d\n", kill(child_pid, SIGTERM));
+	}
+}
+
+void set_signals(char **envp)
+{
+	sigset_t			sigset;
+	struct sigaction	sa;
 	pid_t				pid;
-	
+	int					status;
+
+	memset(&sa, 0, sizeof(struct sigaction));
+	sigemptyset(&sa.sa_mask);
+	sa.sa_handler = handler;
+	sigaction(SIGINT, &sa, NULL);
+	sigaddset(&sigset, SIGINT);
+	while (1)
+	{	
+		printf("parent pid is %d\n", getpid());
+		printf("return of waitpid is %d\n", waitpid(child_pid, &status, 0));
+		perror("waitpid");
+		if(WIFSIGNALED(status))
+		{	
+			printf("entra al newshell\n");
+			write(1,"\n", 1);
+			pid = fork();
+			child_pid = pid;
+			if (pid == 0)
+				new_shell(envp);
+		}
+		else
+		{	
+			printf("entra al exit\n");
+			exit(0);
+		}
+	}	
+}
+
+int main(int argc, char **argv, char **envp)
+{	
+	pid_t		pid;
+
 	if (!argc && !argv && !envp)
 		return (0);
 	pid = fork();
+	child_pid = pid;
 	if (pid > 0)
-		set_signals();
+		set_signals(envp);
 	if (pid == 0)
-	{
-		while (1)
-		{	
-			write(1, "waiting\n", 8);
-			c = readline("jgravalo> ");
-			write(1, "pasaread\n", 9);
-			add_history(c);
-			exit = parse_pipex(c, envp);
-			free(c);
-		}
-		return (exit);
-	}
+		new_shell(envp);
 }
 

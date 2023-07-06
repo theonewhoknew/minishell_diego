@@ -9,23 +9,27 @@
 # include <signal.h>
 #include "../inc/minishell.h"
 
+pid_t child_pid;
+
 void handler(int signal)
 {
 	if (signal == SIGINT)
 	{	
-		write(1, "SIGINT\n", 7);
+		exit(0);
 	}
-	if (signal == SIGQUIT)
+	else if (signal == EOF)
 	{	
 		exit(0);
 	}
 }
 
-void set_signals()
+void set_signals(int pid)
 {
 	sigset_t			sigset;
 	struct sigaction	sa;
 
+	child_pid = pid;
+	printf("child pid is %d\n", getpid());
 	memset(&sa, 0, sizeof(struct sigaction));
 	sigemptyset(&sigset);
 	sa.sa_handler = handler;
