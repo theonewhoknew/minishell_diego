@@ -63,8 +63,9 @@ int		count_ascii(char *line, int c);
 
 int		count_arr(char **args);
 
-void 	set_signals();
+int 	new_shell(char **envp);
 
+int 	set_signals(int pid, char **envp);
 /*
 void	make_history(t_hist *hist, char *line);
 

@@ -12,39 +12,6 @@
 #include <readline/history.h>
 #include "../inc/minishell.h"
 
-//int	search_redir(char **args)
-
-int	check_redir(char **args, int type)
-{
-	int fd;
-	int i;
-
-	i = 0;
-	while (args[i])
-	{
-		if (type == 0 && ft_strcmp(args[i], ">"))
-			fd = open(args[i + 1], O_RDWR | O_CREAT | O_TRUNC, 00644); // > salida
-		if (ft_strcmp(args[i], ">>"))
-			fd = open(args[i + 1], O_RDWR | O_CREAT | O_APPEND, 00644); // >> salida
-		if (ft_strcmp(args[i], "<"))
-			fd = open(args[i + 1], O_RDONLY); // < entrada
-//		if (ft_strcmp(args[i], "<<"))
-		i++;
-	}
-	return (fd);
-}
-
-void test_pipe(t_pipe *p)
-{
-//	write(p->p[1], "el pipe funciona\n", 17);
-	char buffer[17];
-	read(p->p[0], buffer, 17);
-	write(1, "<<<", 3);
-	write(1, buffer, 17);
-	write(1, ">>>", 3);
-	write(1, "\n", 1);
-}
-
 int	parse_line(char *line, char **envp, t_pipe *in, t_pipe *out)
 //int	parse_line(char *line, char **envp)
 {
@@ -54,6 +21,8 @@ int	parse_line(char *line, char **envp, t_pipe *in, t_pipe *out)
 //	t_pipe	p;
 	int		exit;
 	pid = fork();
+	if (pid > 0)
+		exit = set_signals(pid, envp);
 	if (pid == 0)
 	{
 		//fd = check_redir(args); //si hay redireccion, borrarla de la linea
@@ -75,8 +44,6 @@ int	parse_line(char *line, char **envp, t_pipe *in, t_pipe *out)
 		cmd = file_cmd(args[0], envp);
 		execve(cmd, args, envp);
 	}
-//	test_pipe(out);
-	waitpid(pid, &exit, 0);
 	exit = WEXITSTATUS(exit);
 	return (exit);
 }
@@ -119,42 +86,14 @@ int parse_pipex(char *line, char **envp)
 	return (exit);
 }
 
-int parse_ands(char *line, char **envp)
-{
-	char	**ands;
-	int		i;
-	int		exit;
-
-	ands = ft_split(line, '&');//modificarlo para que parta con strings
-	i = 0;
-	while (ands[i])
-	{
-		exit = parse_pipex(ands[i], envp);
-		i++;
-	}
-	return (exit);
+static void handler(int sig) 
+{	
+	if (sig == SIGINT)
+    	write(1, "\njgravalo> ", 11);
+	if (sig == SIGQUIT)
+		return ;
 }
-
-int parse_ors(char *line, char **envp)
-{
-	char	**ors;
-	int		i;
-	int		exit;
-
-	ors = ft_split(line, '|');//modificarlo para que parta con strings
-	i = 0;
-	while (ors[i])
-	{
-		exit = parse_ands(ors[i], envp);
-		if (exit == 0)
-			break ;
-		i++;
-	}
-	return (exit);
-}
-
-pid_t		child_pid;
-
+  
 int new_shell(char **envp)
 {	
 	char				*c;
@@ -162,71 +101,28 @@ int new_shell(char **envp)
 
 	while (1)
 	{	
-		printf("pid is %d\n", getpid());
+		signal(SIGINT, handler);
+		signal(SIGQUIT, handler);
 		c = readline("jgravalo> ");
 		if (c == NULL)
+		{	
+			write(1, "exit\n", 6);
 			exit(1);
-		add_history(c);
-		exit_code = parse_pipex(c, envp);
-		free(c);
+		}
+		if (c[0] != 0)
+		{	
+			add_history(c);
+			exit_code = parse_pipex(c, envp);
+			free(c);
+		}
 	}
 		return (exit_code);
 }
 
-void handler(int signal)
-{
-	if (signal == SIGINT)
-	{	
-		printf("child process is %d\n", child_pid);
-		printf("return of kill is %d\n", kill(child_pid, SIGTERM));
-	}
-}
-
-void set_signals(char **envp)
-{
-	sigset_t			sigset;
-	struct sigaction	sa;
-	pid_t				pid;
-	int					status;
-
-	memset(&sa, 0, sizeof(struct sigaction));
-	sigemptyset(&sa.sa_mask);
-	sa.sa_handler = handler;
-	sigaction(SIGINT, &sa, NULL);
-	sigaddset(&sigset, SIGINT);
-	while (1)
-	{	
-		printf("parent pid is %d\n", getpid());
-		printf("return of waitpid is %d\n", waitpid(child_pid, &status, 0));
-		perror("waitpid");
-		if(WIFSIGNALED(status))
-		{	
-			printf("entra al newshell\n");
-			write(1,"\n", 1);
-			pid = fork();
-			child_pid = pid;
-			if (pid == 0)
-				new_shell(envp);
-		}
-		else
-		{	
-			printf("entra al exit\n");
-			exit(0);
-		}
-	}	
-}
-
 int main(int argc, char **argv, char **envp)
 {	
-	pid_t		pid;
-
 	if (!argc && !argv && !envp)
 		return (0);
-	pid = fork();
-	child_pid = pid;
-	if (pid > 0)
-		set_signals(envp);
-	if (pid == 0)
-		new_shell(envp);
+	new_shell(envp);		
 }
 

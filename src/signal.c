@@ -6,37 +6,41 @@
 # include <errno.h>
 # include <readline/readline.h>
 # include <readline/history.h>
+# include <sys/types.h>
+# include <sys/wait.h>
 # include <signal.h>
 #include "../inc/minishell.h"
 
-pid_t child_pid;
+pid_t	fg_pid;
 
 void handler(int signal)
 {
 	if (signal == SIGINT)
 	{	
-		exit(0);
-	}
-	else if (signal == EOF)
-	{	
-		exit(0);
+		kill(fg_pid, SIGTERM);
 	}
 }
 
-void set_signals(int pid)
+int set_signals(int pid, char **envp)
 {
 	sigset_t			sigset;
 	struct sigaction	sa;
+	int					status;
 
-	child_pid = pid;
-	printf("child pid is %d\n", getpid());
+	fg_pid = pid;
 	memset(&sa, 0, sizeof(struct sigaction));
-	sigemptyset(&sigset);
+	sigemptyset(&sa.sa_mask);
 	sa.sa_handler = handler;
+	sa.sa_flags = SA_RESTART;
 	sigaction(SIGINT, &sa, NULL);
-	sigaction(SIGQUIT, &sa, NULL);
 	sigaddset(&sigset, SIGINT);
-	sigaddset(&sigset, SIGQUIT);
-	while (1)
-		;
+	waitpid(0, &status, 0);
+	if(WIFSIGNALED(status))
+	{	
+		write(1, "\n", 1);
+		new_shell(envp);
+		return (0);
+	}		
+	else
+		return (status);
 }
