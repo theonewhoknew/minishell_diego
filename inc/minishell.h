@@ -29,6 +29,16 @@ typedef struct s_pipe{
 //	struct s_pipe	*next;
 }	t_pipe;
 
+typedef struct s_shell
+{	
+	char **tokens;
+	char **pipes;
+	int pipex;
+	int exit;
+	t_pipe *p;
+
+}				t_shell;
+
 int		cmd_error(char *str);
 
 size_t	ft_strlen(const char *str);
@@ -66,6 +76,8 @@ int		count_arr(char **args);
 int 	new_shell(char **envp);
 
 int 	set_signals(int pid, char **envp);
+
+void 	set_termios();
 /*
 void	make_history(t_hist *hist, char *line);
 
