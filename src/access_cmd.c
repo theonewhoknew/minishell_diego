@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   access_cmd.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jgravalo <jgravalo@student.42barcelona.co  +#+  +:+       +#+        */
+/*   By: theonewhoknew <theonewhoknew@student.42    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/21 17:09:57 by jgravalo          #+#    #+#             */
-/*   Updated: 2023/06/19 18:26:33 by jgravalo         ###   ########.fr       */
+/*   Updated: 2023/07/10 10:30:46 by theonewhokn      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,17 +63,20 @@ char	*access_cmd(char *cmd, char**docs, int env)
 	int		i;
 
 	i = 0;
-	while (docs[i])
-	{
-		tmp = ft_strjoin(docs[i], "/");
-		docs[i] = ft_strjoin(tmp, cmd);
-	//	write(1, "aqui\n", 5);
-	//	free(tmp);
-		if ((access(docs[i], F_OK)) != -1)
-			return (docs[i]);
-		i++;
+	if (cmd[0] != '/')   //si no empieza por backslash, bash pensará que es un comando (para dar error)
+	{	
+		while (docs[i])
+		{
+			tmp = ft_strjoin(docs[i], "/");
+			docs[i] = ft_strjoin(tmp, cmd);
+			if ((access(docs[i], F_OK)) != -1)
+				return (docs[i]);
+			i++;
+		}
+		printf("%s: Command not found\n", cmd);
+		free(tmp);
+		return (NULL);
 	}
-	
 	if (env == -1 && access(cmd, F_OK) == 0)
 		return (cmd);
 	if (is_local(cmd) == 0 && !(cmd[0] == '.' && cmd[1] == '/'))
@@ -93,7 +96,7 @@ char	*file_cmd(char *cmd, char **envp)
 	char	*file;
 	char	**docs;
 
-	env = 0;
+	env = 0;						
 	if (!(cmd[0] == '.' && cmd[1] == '/'))
 		env = search_path(envp);
 	if (env != -1)

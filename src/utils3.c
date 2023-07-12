@@ -1,16 +1,16 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line_utils.c                              :+:      :+:    :+:   */
+/*   utils3.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: jgravalo <jgravalo@student.42barcel>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/07/14 15:41:10 by jgravalo          #+#    #+#             */
-/*   Updated: 2023/07/10 00:57:47 by jgravalo         ###   ########.fr       */
+/*   Updated: 2023/07/11 14:27:40 by jgravalo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "get_next_line.h"
+#include "../inc/minishell.h"
 
 size_t	ft_strlen(const char *str)
 {
@@ -48,9 +48,9 @@ char	*ft_strjoin(char *s1, char *s2)
 	size_t	j;
 	char	*new;
 	
-	if (!s1)
+	if (!s1 || ft_strcmp("", s1) == 0)
 		return (s2);
-	if (!s2)
+	if (!s2 || ft_strcmp("", s2) == 0)
 		return (s1);
 	new = malloc(sizeof(char) * ((ft_strlen(s1) + ft_strlen(s2)) + 1));
 	if (new == NULL)
