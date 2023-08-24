@@ -105,7 +105,7 @@ int new_shell(char **envp)
 		signal(SIGINT, handler);
 		signal(SIGQUIT, handler);
 		c = readline("jgravalo> ");
-		c = parse_heredoc(c); 
+		//c = parse_heredoc(c); 
 		if (c == NULL)
 		{	
 			write(1, "exit\n", 6);
